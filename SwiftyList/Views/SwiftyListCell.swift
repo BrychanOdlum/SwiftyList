@@ -6,7 +6,7 @@
 //  Copyright © 2019 Brychan Bennett-Odlum. All rights reserved.
 //
 
-import Foundation
+import Cocoa
 
 class SwiftyListCell: NSView {
 	private var cachedHeight: CGFloat?
