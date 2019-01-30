@@ -10,6 +10,7 @@
 		71F0B41322015DE700BFB408 /* SwiftyList.h in Headers */ = {isa = PBXBuildFile; fileRef = 71F0B41122015DE700BFB408 /* SwiftyList.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		71F0B41A22015E0100BFB408 /* SwiftyList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F0B41922015E0100BFB408 /* SwiftyList.swift */; };
 		71F0B41C2201633100BFB408 /* SwiftyList.podspec in Resources */ = {isa = PBXBuildFile; fileRef = 71F0B41B2201633100BFB408 /* SwiftyList.podspec */; };
+		71F0B422220179F600BFB408 /* SwiftyListCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F0B421220179F600BFB408 /* SwiftyListCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +19,7 @@
 		71F0B41222015DE700BFB408 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		71F0B41922015E0100BFB408 /* SwiftyList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftyList.swift; sourceTree = "<group>"; };
 		71F0B41B2201633100BFB408 /* SwiftyList.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SwiftyList.podspec; sourceTree = "<group>"; };
+		71F0B421220179F600BFB408 /* SwiftyListCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftyListCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,11 +53,20 @@
 		71F0B41022015DE700BFB408 /* SwiftyList */ = {
 			isa = PBXGroup;
 			children = (
+				71F0B420220179D000BFB408 /* Views */,
 				71F0B41122015DE700BFB408 /* SwiftyList.h */,
 				71F0B41222015DE700BFB408 /* Info.plist */,
 				71F0B41922015E0100BFB408 /* SwiftyList.swift */,
 			);
 			path = SwiftyList;
+			sourceTree = "<group>";
+		};
+		71F0B420220179D000BFB408 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				71F0B421220179F600BFB408 /* SwiftyListCell.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,6 +150,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				71F0B41A22015E0100BFB408 /* SwiftyList.swift in Sources */,
+				71F0B422220179F600BFB408 /* SwiftyListCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
