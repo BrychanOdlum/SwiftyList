@@ -12,13 +12,15 @@ import SnapKit
 let BUFFER_SPACING: CGFloat = 400.0
 
 class SwiftyListView: NSViewController {
+
+	// Internal views
 	var documentView: NSView!
 	var scrollView: NSScrollView!
-	
-	var currentHeight: CGFloat = 0.0
-	
-	var debug_meta_highlightView: NSView!
-	
+
+	var dataSource: SwiftyListViewDataSource!
+
+
+	// Internal row data
 	var rows = [SwiftyListCell]()
 	var topIndex: Int?
 	var bottomIndex: Int?
@@ -35,13 +37,24 @@ class SwiftyListView: NSViewController {
 		return rows[bottomIndex]
 	}
 	
-	
+
+	// Scroll data
+	var currentHeight: CGFloat = 0.0
 	var offsetYTop: CGFloat = 0.0
 	var offsetYBottom: CGFloat = 0.0
 	var contentBounds: NSRect {
 		let debugRect = self.scrollView.contentView.bounds
 		return NSRect(x: debugRect.origin.x, y: debugRect.origin.y + 0, width: debugRect.width, height: debugRect.height - 0)
 	}
+
+	// Temporary debug only
+	var debug_meta_highlightView: NSView!
+
+
+
+	// ---------------------------------------------------------------
+	// ---------------------------------------------------------------
+	// MARK: Initialisation
 	
 	override func loadView() {
 		self.view = NSView(frame: NSRect(x: 0, y: 0, width: 700, height: 500))
@@ -87,15 +100,35 @@ class SwiftyListView: NSViewController {
 		}
 		updateViews()
 	}
+
+
+
+	// ---------------------------------------------------------------
+	// ---------------------------------------------------------------
+	// MARK: Public functions
+
+	public func reloadData() {
+
+	}
+
+
+
+	// ---------------------------------------------------------------
+	// ---------------------------------------------------------------
+
+	// MARK: Internal functions + logic
+
+
+	@objc private func handleScroll(notification: NSNotification) {
+		self.updateViews()
+	}
 	
-	func addRow(_ row: SwiftyListCell) {
+	private func addRow(_ row: SwiftyListCell) {
 		currentHeight += row.calculateHeight()
 		rows.append(row)
 	}
 	
-	var dwiTest: DispatchWorkItem?
-	
-	func updateViews() {
+	private func updateViews() {
 		debug_move_metaView()
 		
 		
@@ -104,35 +137,23 @@ class SwiftyListView: NSViewController {
 		}
 	}
 	
-	func isRowInBounds(_ index: Int) {
+	private func isRowInBounds(_ index: Int) {
 		
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	func debug_move_metaView() {
+
+
+
+
+
+	// ---------------------------------------------------------------
+	// ---------------------------------------------------------------
+	// MARK: Debug logic
+
+	private func debug_move_metaView() {
 		self.debug_meta_highlightView.snp.updateConstraints { make in
 			make.bottom.equalTo(-self.contentBounds.origin.y)
 			make.height.equalTo(self.contentBounds.height)
 		}
 	}
-	
-	@objc func handleScroll(notification: NSNotification) {
-		self.updateViews()
-	}
+
 }
