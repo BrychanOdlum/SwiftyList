@@ -25,11 +25,11 @@ class SwiftyListCell: NSView {
 		}
 	}
 	
-	init(id: Int, frame: NSRect) {
+	required init(id: Int, frame: NSRect) {
 		self.id = id
 		super.init(frame: frame)
 	}
-	
+
 	required init?(coder decoder: NSCoder) {
 		fatalError("init(coder:) has not been implemented"); // TODO: This.
 	}

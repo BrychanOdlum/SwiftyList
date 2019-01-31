@@ -59,30 +59,38 @@ class SwiftyListView: NSViewController {
 	override func loadView() {
 		self.view = NSView(frame: NSRect(x: 0, y: 0, width: 700, height: 500))
 		self.view.wantsLayer = true
-		
-		self.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 0, height: currentHeight-100))
+
+		// Setup document view
+		self.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 700, height: 3000))
 		self.documentView.wantsLayer = true
-		self.documentView.layer?.backgroundColor = CGColor(red: 0, green: 0, blue: 1, alpha: 0.02)
-		
+		self.documentView.layer?.backgroundColor = CGColor(red: 0, green: 0, blue: 1, alpha: 1)
+
+		// Setup scroll view and add document view
 		self.scrollView = NSScrollView()
 		self.scrollView.wantsLayer = true
-		self.scrollView.backgroundColor = NSColor(red: 0, green: 1, blue: 0, alpha: 0.1)
+		self.scrollView.backgroundColor = NSColor(red: 0, green: 1, blue: 0, alpha: 0.5)
 		self.scrollView.drawsBackground = true
 		self.scrollView.documentView = self.documentView
 		self.scrollView.hasHorizontalRuler = false
 		self.scrollView.hasHorizontalScroller = false
 		self.scrollView.hasVerticalRuler = false
 		self.scrollView.hasVerticalScroller = true
-		
 		self.view.addSubview(self.scrollView)
-		
+
+		// Add temporary debug highlight view
 		self.debug_meta_highlightView = NSView(frame: NSRect(x: 0, y: 0, width: 0, height: 100))
 		self.debug_meta_highlightView.wantsLayer = true
 		self.debug_meta_highlightView.layer?.backgroundColor = CGColor(red: 1, green: 0, blue: 0, alpha: 0.2)
 		self.documentView.addSubview(self.debug_meta_highlightView)
-		
+
+		// Add scroll handler
 		self.scrollView.contentView.postsBoundsChangedNotifications = true
-		NotificationCenter.default.addObserver(self, selector: #selector(handleScroll(notification:)), name: NSView.boundsDidChangeNotification, object: self.scrollView.contentView)
+		NotificationCenter.default.addObserver(
+			self,
+			selector: #selector(handleScroll(notification:)),
+			name: NSView.boundsDidChangeNotification,
+			object: self.scrollView.contentView
+		)
 	}
 	
 	override func viewDidAppear() {
@@ -98,7 +106,8 @@ class SwiftyListView: NSViewController {
 			make.bottom.equalTo(0)
 			make.height.equalTo(100)
 		}
-		updateViews()
+
+		self.reloadData()
 	}
 
 
@@ -108,7 +117,11 @@ class SwiftyListView: NSViewController {
 	// MARK: Public functions
 
 	public func reloadData() {
+		print("Reloading data in SwiftyListView...")
 
+
+
+		self.updateViews()
 	}
 
 
@@ -122,23 +135,51 @@ class SwiftyListView: NSViewController {
 	@objc private func handleScroll(notification: NSNotification) {
 		self.updateViews()
 	}
-	
-	private func addRow(_ row: SwiftyListCell) {
-		currentHeight += row.calculateHeight()
-		rows.append(row)
+
+	private func isRowInBounds(_ index: Int) {
+
 	}
-	
+
+	private func addRow(withIndex index: Int, at originY: CGFloat) {
+		print("rendering \(index) at: \(originY)")
+		let cell = self.dataSource.cellForRow(in: self, at: index, width: self.view.frame.width)
+		cell.frame.origin.y = originY
+
+		self.documentView.addSubview(cell)
+		self.currentHeight += cell.frame.height
+
+		print(cell)
+	}
+
+	var dwiTest: DispatchWorkItem?
 	private func updateViews() {
 		debug_move_metaView()
-		
-		
+
+		if self.dwiTest == nil {
+			self.dwiTest = DispatchWorkItem {
+
+				var isEmpty = true
+
+				// Render new row
+				if isEmpty {
+					// From current location
+					self.addRow(withIndex: 5000, at: self.contentBounds.maxY + 50)
+					self.topIndex = 5000
+					self.bottomIndex = 5000
+				}
+
+				// Release task
+				self.dwiTest?.cancel()
+				self.dwiTest = nil
+			}
+			DispatchQueue.main.async(execute: dwiTest!)
+		}
+
+
+		// Update documentview height
 		self.documentView.snp.updateConstraints { make in
 			make.height.equalTo(currentHeight)
 		}
-	}
-	
-	private func isRowInBounds(_ index: Int) {
-		
 	}
 
 
