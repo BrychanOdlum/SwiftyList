@@ -9,7 +9,7 @@
 import Cocoa
 import SnapKit
 
-let BUFFER_SPACING: CGFloat = 400.0
+let BUFFER_SPACING: CGFloat = 100.0
 
 class SwiftyListView: NSViewController {
 
@@ -21,35 +21,38 @@ class SwiftyListView: NSViewController {
 
 
 	// Internal row data
-	var rows = [SwiftyListCell]()
+	var cachedCells = [Int: SwiftyListCell]()
 	var topIndex: Int?
 	var bottomIndex: Int?
-	var topRow: SwiftyListCell? {
+	var topCell: SwiftyListCell? {
 		guard let topIndex = self.topIndex else {
 			return nil
 		}
-		return rows[topIndex]
+		return cachedCells[topIndex]
 	}
-	var bottomRow: SwiftyListCell? {
+	var bottomCell: SwiftyListCell? {
 		guard let bottomIndex = self.bottomIndex else {
 			return nil
 		}
-		return rows[bottomIndex]
+		return cachedCells[bottomIndex]
 	}
 	
 
 	// Scroll data
-	var currentHeight: CGFloat = 0.0
+	var contentHeight: CGFloat = 0.0
+	var documentHeight: CGFloat {
+		return (contentHeight < self.scrollView.frame.height ? self.scrollView.frame.height : self.contentHeight) + 500;
+	}
+
 	var offsetYTop: CGFloat = 0.0
 	var offsetYBottom: CGFloat = 0.0
 	var contentBounds: NSRect {
 		let debugRect = self.scrollView.contentView.bounds
-		return NSRect(x: debugRect.origin.x, y: debugRect.origin.y + 0, width: debugRect.width, height: debugRect.height - 0)
+		return NSRect(x: debugRect.origin.x, y: debugRect.origin.y + BUFFER_SPACING, width: debugRect.width, height: debugRect.height - (BUFFER_SPACING * 2))
 	}
 
 	// Temporary debug only
 	var debug_meta_highlightView: NSView!
-
 
 
 	// ---------------------------------------------------------------
@@ -63,7 +66,7 @@ class SwiftyListView: NSViewController {
 		// Setup document view
 		self.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 700, height: 3000))
 		self.documentView.wantsLayer = true
-		self.documentView.layer?.backgroundColor = CGColor(red: 0, green: 0, blue: 1, alpha: 1)
+		self.documentView.layer?.backgroundColor = CGColor(red: 1, green: 0.2, blue: 0, alpha: 0.5)
 
 		// Setup scroll view and add document view
 		self.scrollView = NSScrollView()
@@ -80,7 +83,7 @@ class SwiftyListView: NSViewController {
 		// Add temporary debug highlight view
 		self.debug_meta_highlightView = NSView(frame: NSRect(x: 0, y: 0, width: 0, height: 100))
 		self.debug_meta_highlightView.wantsLayer = true
-		self.debug_meta_highlightView.layer?.backgroundColor = CGColor(red: 1, green: 0, blue: 0, alpha: 0.2)
+		self.debug_meta_highlightView.layer?.backgroundColor = CGColor(red: 0, green: 0, blue: 1, alpha: 0.1)
 		self.documentView.addSubview(self.debug_meta_highlightView)
 
 		// Add scroll handler
@@ -99,7 +102,7 @@ class SwiftyListView: NSViewController {
 		}
 		self.documentView.snp.makeConstraints { make in
 			make.left.right.equalToSuperview()
-			make.height.equalTo(currentHeight)
+			make.height.equalTo(self.documentHeight)
 		}
 		self.debug_meta_highlightView.snp.makeConstraints { make in
 			make.left.right.equalToSuperview()
@@ -142,13 +145,19 @@ class SwiftyListView: NSViewController {
 
 	private func addRow(withIndex index: Int, at originY: CGFloat) {
 		print("rendering \(index) at: \(originY)")
-		let cell = self.dataSource.cellForRow(in: self, at: index, width: self.view.frame.width)
-		cell.frame.origin.y = originY
-
-		self.documentView.addSubview(cell)
-		self.currentHeight += cell.frame.height
-
-		print(cell)
+		
+		var cell = self.cachedCells[index]
+		
+		if cell == nil {
+			cell = self.dataSource.cellForRow(in: self, at: index, width: self.view.frame.width)
+			self.cachedCells[index] = cell
+		}
+		
+		if let cell = cell {
+			cell.frame.origin.y = originY
+			self.documentView.addSubview(cell)
+			// self.contentHeight += cell.frame.height
+		}
 	}
 
 	var dwiTest: DispatchWorkItem?
@@ -159,6 +168,11 @@ class SwiftyListView: NSViewController {
 			self.dwiTest = DispatchWorkItem {
 
 				var isEmpty = true
+				
+				if self.topIndex != nil {
+					isEmpty = false
+				}
+				
 
 				// Render new row
 				if isEmpty {
@@ -166,6 +180,12 @@ class SwiftyListView: NSViewController {
 					self.addRow(withIndex: 5000, at: self.contentBounds.maxY + 50)
 					self.topIndex = 5000
 					self.bottomIndex = 5000
+				}
+
+				// Around previous
+				if let topIndex = self.topIndex {
+					// let topCell = self.cachedCells[topCellIndex]
+					self.renderFrom(topIndex, upwards: true, downwards: true)
 				}
 
 				// Release task
@@ -178,7 +198,70 @@ class SwiftyListView: NSViewController {
 
 		// Update documentview height
 		self.documentView.snp.updateConstraints { make in
-			make.height.equalTo(currentHeight)
+			make.height.equalTo(self.documentHeight)
+		}
+	}
+
+	private func renderFrom(_ index: Int, upwards: Bool, downwards: Bool, limit: Int? = nil) {
+		// If either top or bottom hasn't been set yet then we probably want to be loading our initial row.
+		if self.topCell == nil {
+			let lastIndex = self.cachedCells.count - 1
+			let bottomOrigin = self.contentBounds.origin.y
+			self.addRow(withIndex: lastIndex, at: bottomOrigin)
+			self.topIndex = lastIndex
+			self.bottomIndex = lastIndex
+		}
+
+		// Insert new at top
+		if upwards, var previousIndex = self.topIndex {
+			guard var previousRow = self.cachedCells[previousIndex] else {
+				return
+			}
+
+			print("rednering above")
+			var count = 0
+
+			while previousIndex > 0 && previousRow.frame.maxY < self.contentBounds.maxY + BUFFER_SPACING {
+				let newIndex = previousIndex - 1
+				
+				print("while...")
+
+				self.addRow(withIndex: newIndex, at: previousRow.frame.maxY)
+
+				self.topIndex = newIndex
+				previousIndex = newIndex
+				previousRow = self.cachedCells[previousIndex]!
+
+				count += 1
+				if let limit = limit, count <= limit {
+					break
+				}
+			}
+		}
+
+		// Insert new at bottom
+		if downwards, var previousIndex = self.bottomIndex {
+			guard var previousRow = self.cachedCells[previousIndex] else {
+				return
+			}
+
+			print("rednering below")
+			var count = 0
+
+			while previousIndex < self.cachedCells.count - 1 && previousRow.frame.minY > self.contentBounds.minY - BUFFER_SPACING {
+				let newIndex = previousIndex + 1
+
+				self.addRow(withIndex: newIndex, at: previousRow.frame.minY - previousRow.frame.height)
+
+				self.bottomIndex = newIndex
+				previousIndex = newIndex
+				previousRow = self.cachedCells[previousIndex]!
+
+				count += 1
+				if let limit = limit, count <= limit {
+					break
+				}
+			}
 		}
 	}
 
