@@ -21,6 +21,7 @@ class SwiftyListView: NSViewController {
 
 
 	// Internal row data
+	var cellLimit = 0
 	var cachedCells = [Int: SwiftyListCell]()
 	var topIndex: Int?
 	var bottomIndex: Int?
@@ -41,7 +42,7 @@ class SwiftyListView: NSViewController {
 	// Scroll data
 	var contentHeight: CGFloat = 0.0
 	var documentHeight: CGFloat {
-		return (contentHeight < self.scrollView.frame.height ? self.scrollView.frame.height : self.contentHeight) + 500;
+		return (contentHeight < self.scrollView.frame.height ? self.scrollView.frame.height : self.contentHeight) + 30000000;
 	}
 
 	var offsetYTop: CGFloat = 0.0
@@ -122,7 +123,7 @@ class SwiftyListView: NSViewController {
 	public func reloadData() {
 		print("Reloading data in SwiftyListView...")
 
-
+		self.cellLimit = self.dataSource.numberOfRows(in: self)
 
 		self.updateViews()
 	}
@@ -173,13 +174,49 @@ class SwiftyListView: NSViewController {
 					isEmpty = false
 				}
 				
+				// Cleanup at top
+				if var previousIndex = self.topIndex {
+					var previousRow = self.cachedCells[previousIndex]
+					while previousRow != nil, previousRow!.frame.minY > self.contentBounds.maxY + BUFFER_SPACING {
+						previousRow!.removeFromSuperview()
+						previousRow = nil
+						previousIndex = previousIndex + 1
+						
+						previousRow = self.cachedCells[previousIndex]
+						if previousRow == nil {
+							break
+						} else {
+							self.offsetYTop = previousRow!.bounds.maxY
+						}
+					}
+					self.topIndex = previousIndex
+				}
+				
+				// Cleanup at bottom
+				if var previousIndex = self.bottomIndex {
+					var previousRow = self.cachedCells[previousIndex]
+					while previousRow != nil, previousRow!.frame.maxY < self.contentBounds.minY - BUFFER_SPACING {
+						previousRow!.removeFromSuperview()
+						previousRow = nil
+						previousIndex = previousIndex - 1
+						
+						previousRow = self.cachedCells[previousIndex]
+						if previousRow == nil {
+							break
+						} else {
+							self.offsetYBottom = previousRow!.bounds.minY
+						}
+					}
+					self.bottomIndex = previousIndex
+				}
+				
 
 				// Render new row
 				if isEmpty {
 					// From current location
-					self.addRow(withIndex: 5000, at: self.contentBounds.maxY + 50)
-					self.topIndex = 5000
-					self.bottomIndex = 5000
+					self.addRow(withIndex: self.cellLimit, at: self.contentBounds.minY)
+					self.topIndex = self.cellLimit
+					self.bottomIndex = self.cellLimit
 				}
 
 				// Around previous
@@ -248,8 +285,9 @@ class SwiftyListView: NSViewController {
 			print("rednering below")
 			var count = 0
 
-			while previousIndex < self.cachedCells.count - 1 && previousRow.frame.minY > self.contentBounds.minY - BUFFER_SPACING {
-				let newIndex = previousIndex + 1
+			while previousIndex < self.cellLimit && previousRow.frame.minY > self.contentBounds.minY - BUFFER_SPACING {
+				let newIndex = previousIndex
+					+ 1
 
 				self.addRow(withIndex: newIndex, at: previousRow.frame.minY - previousRow.frame.height)
 
