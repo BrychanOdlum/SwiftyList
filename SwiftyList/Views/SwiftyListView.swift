@@ -143,10 +143,8 @@ class SwiftyListView: NSViewController {
 	private func isRowInBounds(_ index: Int) {
 
 	}
-
-	private func addRow(withIndex index: Int, at originY: CGFloat) {
-		print("rendering \(index) at: \(originY)")
-		
+	
+	private func generateRow(withIndex index: Int) -> SwiftyListCell? {
 		var cell = self.cachedCells[index]
 		
 		if cell == nil {
@@ -154,11 +152,32 @@ class SwiftyListView: NSViewController {
 			self.cachedCells[index] = cell
 		}
 		
-		if let cell = cell {
-			cell.frame.origin.y = originY
-			self.documentView.addSubview(cell)
-			// self.contentHeight += cell.frame.height
+		return cell
+	}
+
+	private func renderRow(withIndex index: Int, at originY: CGFloat) {
+		guard let cell = self.generateRow(withIndex: index) else {
+			print("Could not generate cell for index \(index)")
+			return
 		}
+		cell.frame.origin.y = originY
+		self.documentView.addSubview(cell)
+		// self.contentHeight += cell.frame.height
+	}
+	
+	private func generateCells(fromIndex index: Int, toFillHeight maxHeight: CGFloat, direction: SwiftyListCellDirection) -> [SwiftyListCell] {
+		var usedHeight: CGFloat = 0
+		var index = index
+		var cells = [SwiftyListCell]()
+		while usedHeight < maxHeight {
+			guard let cell = self.generateRow(withIndex: index) else {
+				break
+			}
+			cells.append(cell)
+			usedHeight += cell.frame.height
+			index += direction == SwiftyListCellDirection.upwards ? -1 : 1
+		}
+		return cells
 	}
 
 	var dwiTest: DispatchWorkItem?
@@ -172,6 +191,21 @@ class SwiftyListView: NSViewController {
 				
 				if self.topIndex != nil {
 					isEmpty = false
+				}
+				
+
+				// Render new row
+				if isEmpty {
+					// From current location
+					self.renderRow(withIndex: self.cellLimit, at: self.contentBounds.minY)
+					self.topIndex = self.cellLimit
+					self.bottomIndex = self.cellLimit
+				}
+
+				// Around previous
+				if let topIndex = self.topIndex {
+					// let topCell = self.cachedCells[topCellIndex]
+					self.renderFrom(topIndex, upwards: true, downwards: true)
 				}
 				
 				// Cleanup at top
@@ -209,21 +243,6 @@ class SwiftyListView: NSViewController {
 					}
 					self.bottomIndex = previousIndex
 				}
-				
-
-				// Render new row
-				if isEmpty {
-					// From current location
-					self.addRow(withIndex: self.cellLimit, at: self.contentBounds.minY)
-					self.topIndex = self.cellLimit
-					self.bottomIndex = self.cellLimit
-				}
-
-				// Around previous
-				if let topIndex = self.topIndex {
-					// let topCell = self.cachedCells[topCellIndex]
-					self.renderFrom(topIndex, upwards: true, downwards: true)
-				}
 
 				// Release task
 				self.dwiTest?.cancel()
@@ -244,7 +263,7 @@ class SwiftyListView: NSViewController {
 		if self.topCell == nil {
 			let lastIndex = self.cachedCells.count - 1
 			let bottomOrigin = self.contentBounds.origin.y
-			self.addRow(withIndex: lastIndex, at: bottomOrigin)
+			self.renderRow(withIndex: lastIndex, at: bottomOrigin)
 			self.topIndex = lastIndex
 			self.bottomIndex = lastIndex
 		}
@@ -263,7 +282,7 @@ class SwiftyListView: NSViewController {
 				
 				print("while...")
 
-				self.addRow(withIndex: newIndex, at: previousRow.frame.maxY)
+				self.renderRow(withIndex: newIndex, at: previousRow.frame.maxY)
 
 				self.topIndex = newIndex
 				previousIndex = newIndex
@@ -289,7 +308,7 @@ class SwiftyListView: NSViewController {
 				let newIndex = previousIndex
 					+ 1
 
-				self.addRow(withIndex: newIndex, at: previousRow.frame.minY - previousRow.frame.height)
+				self.renderRow(withIndex: newIndex, at: previousRow.frame.minY - previousRow.frame.height)
 
 				self.bottomIndex = newIndex
 				previousIndex = newIndex
