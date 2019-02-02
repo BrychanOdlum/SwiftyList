@@ -40,9 +40,13 @@ class SwiftyListView: NSViewController {
 	
 
 	// Scroll data
-	var contentHeight: CGFloat = 0.0
+	var renderedContentHeight: CGFloat = 0.0
 	var documentHeight: CGFloat {
-		return (contentHeight < self.scrollView.frame.height ? self.scrollView.frame.height : self.contentHeight) + 30000000;
+		print(renderedContentHeight)
+		print("upwards: \(self.calculateVirtualizedSpace(.upwards))")
+		print("downwards: \(self.calculateVirtualizedSpace(.downwards))")
+		print(renderedContentHeight + self.calculateVirtualizedSpace(.downwards) + self.calculateVirtualizedSpace(.upwards))
+		return renderedContentHeight + self.calculateVirtualizedSpace(.downwards) + self.calculateVirtualizedSpace(.upwards)
 	}
 
 	var offsetYTop: CGFloat = 0.0
@@ -162,7 +166,7 @@ class SwiftyListView: NSViewController {
 		}
 		cell.frame.origin.y = originY
 		self.documentView.addSubview(cell)
-		// self.contentHeight += cell.frame.height
+		self.updateContentHeight()
 	}
 	
 	private func generateCells(fromIndex index: Int, toFillHeight maxHeight: CGFloat, direction: SwiftyListCellDirection) -> [SwiftyListCell] {
@@ -178,6 +182,38 @@ class SwiftyListView: NSViewController {
 			index += direction == SwiftyListCellDirection.upwards ? -1 : 1
 		}
 		return cells
+	}
+	
+	private func updateContentHeight() {
+		guard let topIndex = self.topIndex, let bottomIndex = self.bottomIndex else {
+			return
+		}
+		
+		var height: CGFloat = 0
+		
+		for index in topIndex...bottomIndex {
+			height += self.generateRow(withIndex: index)?.frame.height ?? 0
+		}
+		
+		self.renderedContentHeight = height
+	}
+
+	private func calculateVirtualizedSpace(_ direction: SwiftyListCellDirection) -> CGFloat {
+		guard let bottomIndex = self.bottomIndex, let topIndex = self.topIndex else {
+			return 0
+		}
+
+		let renderedCount = abs(topIndex - bottomIndex)
+		let averageCellHeight = self.renderedContentHeight / CGFloat(renderedCount)
+
+		switch (direction) {
+		case .downwards:
+			let cellsInDir = self.cellLimit - bottomIndex
+			return averageCellHeight * CGFloat(cellsInDir)
+		case .upwards:
+			let cellsInDir = topIndex
+			return averageCellHeight * CGFloat(cellsInDir)
+		}
 	}
 
 	var dwiTest: DispatchWorkItem?
@@ -206,42 +242,6 @@ class SwiftyListView: NSViewController {
 				if let topIndex = self.topIndex {
 					// let topCell = self.cachedCells[topCellIndex]
 					self.renderFrom(topIndex, upwards: true, downwards: true)
-				}
-				
-				// Cleanup at top
-				if var previousIndex = self.topIndex {
-					var previousRow = self.cachedCells[previousIndex]
-					while previousRow != nil, previousRow!.frame.minY > self.contentBounds.maxY + BUFFER_SPACING {
-						previousRow!.removeFromSuperview()
-						previousRow = nil
-						previousIndex = previousIndex + 1
-						
-						previousRow = self.cachedCells[previousIndex]
-						if previousRow == nil {
-							break
-						} else {
-							self.offsetYTop = previousRow!.bounds.maxY
-						}
-					}
-					self.topIndex = previousIndex
-				}
-				
-				// Cleanup at bottom
-				if var previousIndex = self.bottomIndex {
-					var previousRow = self.cachedCells[previousIndex]
-					while previousRow != nil, previousRow!.frame.maxY < self.contentBounds.minY - BUFFER_SPACING {
-						previousRow!.removeFromSuperview()
-						previousRow = nil
-						previousIndex = previousIndex - 1
-						
-						previousRow = self.cachedCells[previousIndex]
-						if previousRow == nil {
-							break
-						} else {
-							self.offsetYBottom = previousRow!.bounds.minY
-						}
-					}
-					self.bottomIndex = previousIndex
 				}
 
 				// Release task
