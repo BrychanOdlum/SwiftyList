@@ -42,10 +42,6 @@ class SwiftyListView: NSViewController {
 	// Scroll data
 	var renderedContentHeight: CGFloat = 0.0
 	var documentHeight: CGFloat {
-		print(renderedContentHeight)
-		print("upwards: \(self.calculateVirtualizedSpace(.upwards))")
-		print("downwards: \(self.calculateVirtualizedSpace(.downwards))")
-		print(renderedContentHeight + self.calculateVirtualizedSpace(.downwards) + self.calculateVirtualizedSpace(.upwards))
 		return renderedContentHeight + self.calculateVirtualizedSpace(.downwards) + self.calculateVirtualizedSpace(.upwards)
 	}
 
@@ -274,13 +270,10 @@ class SwiftyListView: NSViewController {
 				return
 			}
 
-			print("rednering above")
 			var count = 0
 
 			while previousIndex > 0 && previousRow.frame.maxY < self.contentBounds.maxY + BUFFER_SPACING {
 				let newIndex = previousIndex - 1
-				
-				print("while...")
 
 				self.renderRow(withIndex: newIndex, at: previousRow.frame.maxY)
 
