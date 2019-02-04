@@ -301,71 +301,38 @@ class SwiftyListView: NSViewController {
 
 		// Insert new at top
 		if upwards {
-			guard var previousRow = self.cachedCells[index] else {
+			guard let previousRow = self.cachedCells[index] else {
 				return
 			}
 
-			print("top index \(index)")
-
-			var newCells = self.generateCells(
+			let newCells = self.generateCells(
 				fromIndex: index - 1,
 				toFillHeight: (self.contentBounds.maxY + BUFFER_SPACING) - previousRow.frame.maxY,
 				direction: .upwards
 			)
 			
 			for cell in newCells {
-				print("rendering")
 				self.renderRow(self.generateRow(withIndex: cell.id)!)
 			}
-
-			print(newCells.count)
-
-			/*while previousIndex > 0 && previousRow.frame.maxY < self.contentBounds.maxY + BUFFER_SPACING {
-				let newIndex = previousIndex - 1
-
-				print("rendering row above")
-
-				self.renderRow(withIndex: newIndex, at: previousRow.frame.maxY)
-
-				self.topIndex = newIndex
-				previousIndex = newIndex
-				previousRow = self.cachedCells[previousIndex]!
-
-				count += 1
-				if let limit = limit, count <= limit {
-					break
-				}
-			}
-			*/
 		}
 
 		// Insert new at bottom
-		/*
-		if downwards, var previousIndex = self.bottomIndex {
-			guard var previousRow = self.cachedCells[previousIndex] else {
+		
+		if downwards {
+			guard let previousRow = self.cachedCells[index] else {
 				return
 			}
-
-			print("rednering below")
-			var count = 0
-
-			while previousIndex < self.cellLimit && previousRow.frame.minY > self.contentBounds.minY - BUFFER_SPACING {
-				let newIndex = previousIndex
-					+ 1
-
-				self.renderRow(self.generateRow(withIndex: newIndex)!, at: previousRow.frame.minY - previousRow.frame.height)
-
-				self.bottomIndex = newIndex
-				previousIndex = newIndex
-				previousRow = self.cachedCells[previousIndex]!
-
-				count += 1
-				if let limit = limit, count <= limit {
-					break
-				}
+			
+			let newCells = self.generateCells(
+				fromIndex: index + 1,
+				toFillHeight: (self.contentBounds.maxY + BUFFER_SPACING) - previousRow.frame.maxY,
+				direction: .downwards
+			)
+			
+			for cell in newCells {
+				self.renderRow(self.generateRow(withIndex: cell.id)!)
 			}
 		}
-		*/
 	}
 
 
