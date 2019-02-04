@@ -147,8 +147,6 @@ class SwiftyListView: NSViewController {
 	
 	private func generateRow(withIndex index: Int) -> SwiftyListCell? {
 		var cell = self.cachedCells[index]
-
-		print("generating list cell")
 		
 		if cell == nil {
 			cell = self.dataSource.cellForRow(in: self, at: index, width: self.view.frame.width)
@@ -160,8 +158,6 @@ class SwiftyListView: NSViewController {
 
 	private func renderRow(_ cell: SwiftyListCell, at originY: CGFloat? = nil) {
 		var originY2 = originY
-
-		print("render multiple times")
 
 		// Identify correct y origin
 		if originY2 == nil {
@@ -179,18 +175,14 @@ class SwiftyListView: NSViewController {
 
 		// Update cachedIndexes
 		if self.bottomIndex == nil || cell.id > self.bottomIndex! {
-			print("update bottom index")
 			self.bottomIndex = cell.id
 		}
 		if self.topIndex == nil || cell.id < self.topIndex! {
-			print("update top index")
 			self.topIndex = cell.id
 		}
 
 		// Set origin
 		cell.frame.origin.y = originY
-
-		print("rendered")
 
 		// Update document view
 		self.documentView.addSubview(cell)
@@ -201,11 +193,16 @@ class SwiftyListView: NSViewController {
 		var usedHeight: CGFloat = 0
 		var index = index
 		var cells = [SwiftyListCell]()
-		print("generate for \(index) to fill \(maxHeight)")
+
 		while usedHeight < maxHeight {
 			guard let cell = self.generateRow(withIndex: index) else {
 				break
 			}
+			
+			if (direction == .upwards && index < 0) || (direction == .downwards && index >= self.cellLimit) {
+				break
+			}
+
 			cells.append(cell)
 			usedHeight += cell.frame.height
 			index += direction == SwiftyListCellDirection.upwards ? -1 : 1
@@ -262,22 +259,14 @@ class SwiftyListView: NSViewController {
 				// Render new row
 				if isEmpty {
 					// From current location
-					print(" is empty! ")
-					var initialCell = self.generateRow(withIndex: self.cellLimit - 1)!
-					print(" is empty! : generated initial")
+					let initialCell = self.generateRow(withIndex: self.cellLimit - 1)!
 					self.renderRow(initialCell, at: self.contentBounds.minY)
-					print(" is empty! : rendered initial")
 				}
-
-				print("... go around previous.")
 
 				// Around previous
 				if let topIndex = self.topIndex {
-					print("around previous: \(topIndex)")
 					self.renderFrom(topIndex, upwards: true, downwards: true)
 				}
-
-				print("... went around previous.")
 
 				// Release task
 				self.dwiTest?.cancel()
@@ -297,8 +286,6 @@ class SwiftyListView: NSViewController {
 		// If either top or bottom hasn't been set yet then we probably want to be loading our initial row.
 		print("render from: \(index)")
 
-		print("abc: \(upwards) \(downwards)")
-
 		// Insert new at top
 		if upwards {
 			guard let previousRow = self.cachedCells[index] else {
@@ -310,6 +297,8 @@ class SwiftyListView: NSViewController {
 				toFillHeight: (self.contentBounds.maxY + BUFFER_SPACING) - previousRow.frame.maxY,
 				direction: .upwards
 			)
+			
+			print("generated \(newCells.count) cells")
 			
 			for cell in newCells {
 				self.renderRow(self.generateRow(withIndex: cell.id)!)
