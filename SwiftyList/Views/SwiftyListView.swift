@@ -9,7 +9,7 @@
 import Cocoa
 import SnapKit
 
-let BUFFER_SPACING: CGFloat = 300.0
+let BUFFER_SPACING: CGFloat = 0.0
 
 class SwiftyListView: NSViewController {
 
