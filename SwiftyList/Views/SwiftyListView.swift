@@ -41,11 +41,7 @@ class SwiftyListView: NSViewController {
 
 	// Scroll data
 	var renderedContentHeight: CGFloat = 0.0
-	var documentHeight: CGFloat {
-		let contentHeight = renderedContentHeight + self.calculateVirtualizedSpace(.downwards) + self.calculateVirtualizedSpace(.upwards)
-		let scrollViewHeight = self.scrollView.frame.height
-		return contentHeight > scrollViewHeight ? contentHeight : scrollViewHeight
-	}
+	var documentHeight: CGFloat = 0.0
 
 	var contentBounds: NSRect {
 		let debugRect = self.scrollView.contentView.bounds
@@ -183,7 +179,6 @@ class SwiftyListView: NSViewController {
 
 		// Update document view
 		self.documentView.addSubview(cell)
-		self.updateContentHeight()
 	}
 	
 	private func generateCells(fromIndex index: Int, toFillHeight maxHeight: CGFloat, direction: SwiftyListCellDirection) -> [SwiftyListCell] {
@@ -221,6 +216,12 @@ class SwiftyListView: NSViewController {
 		self.renderedContentHeight = height
 	}
 
+	private func updateDocumentHeight() {
+		let contentHeight = renderedContentHeight + self.calculateVirtualizedSpace(.downwards) + self.calculateVirtualizedSpace(.upwards)
+		let scrollViewHeight = self.scrollView.frame.height
+		self.documentHeight = contentHeight > scrollViewHeight ? contentHeight : scrollViewHeight
+	}
+
 	private func calculateVirtualizedSpace(_ direction: SwiftyListCellDirection) -> CGFloat {
 		guard let bottomIndex = self.bottomIndex, let topIndex = self.topIndex else {
 			return 0
@@ -251,7 +252,19 @@ class SwiftyListView: NSViewController {
 
 				// Render initial row if empty (is empty when topIndex is nil)
 				if self.topIndex == nil {
-					let initialCell = self.generateRow(withIndex: 140000)!
+					print()
+
+
+					func initialIndex() -> Int {
+						let scrollPos = self.contentBounds.minY
+						if (scrollPos <= 0) {
+							return self.cellLimit
+						}
+						let scrollMax = self.documentView.frame.height
+						var progress = Float(scrollPos / scrollMax)
+						return self.cellLimit - Int(Float(self.cellLimit) * Float(progress))
+					}
+					let initialCell = self.generateRow(withIndex: initialIndex())!
 					self.renderRow(initialCell, at: self.contentBounds.minY)
 				}
 
@@ -269,6 +282,9 @@ class SwiftyListView: NSViewController {
 			}
 			DispatchQueue.main.async(execute: dwiTest!)
 		}
+
+		self.updateContentHeight()
+		self.updateDocumentHeight()
 
 
 		// Update document view's height
