@@ -252,8 +252,6 @@ class SwiftyListView: NSViewController {
 
 				// Render initial row if empty (is empty when topIndex is nil)
 				if self.topIndex == nil {
-					print()
-
 
 					func initialIndex() -> Int {
 						let scrollPos = self.contentBounds.minY
@@ -353,10 +351,12 @@ class SwiftyListView: NSViewController {
 			guard let previousRow = self.cachedCells[index] else {
 				return
 			}
+
+			print(previousRow.frame.minY - (self.contentBounds.minY + BUFFER_SPACING))
 			
 			let newCells = self.generateCells(
 				fromIndex: index + 1,
-				toFillHeight: (self.contentBounds.minY + BUFFER_SPACING) - previousRow.frame.minY,
+				toFillHeight: previousRow.frame.minY - (self.contentBounds.minY + BUFFER_SPACING),
 				direction: .downwards
 			)
 			
